@@ -165,7 +165,7 @@ server <- function(input, output,session) {
   
   output$line <- renderPlotly({
     
-    p1 <- ggplot(newtweets1(),aes(x=Interval,y=value,col=variable, text = paste("</br>Date: ", Interval, "</br>Value: ", value,"</br>Category: ", variable)))+geom_point()+geom_line()+theme_minimal()+labs(y="Energy (MWh)", x = "Datetime",col = "Category")                                                                                                                                                                                                   
+    p1 <- ggplot(newtweets1(),aes(x=Interval,y=value,col=variable, text = paste("</br>Date: ", Interval, "</br>Value: ", value,"</br>Category: ", variable)))+geom_point()+geom_line()+theme_minimal()+labs(y="Wind Penetration (%)", x = "Datetime",col = "Category")                                                                                                                                                                                                   
     ggplotly(p1, tooltip = c("text"))
     
     
