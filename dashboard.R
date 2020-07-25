@@ -75,7 +75,7 @@ get_gen_data <- function() {
   gendf$Hour <- hour(gendf$GMT.MKT.Interval)
   
   gendf = melt(gendf, id = c("GMT.MKT.Interval", "Hour"))
- 
+  
   
   newgendf <-
     gendf[order(gendf$GMT.MKT.Interval, decreasing = TRUE),]
@@ -163,16 +163,19 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   width = 3,
-                  selectInput("chart_type", "Plot Type", choices = NULL, multiple = FALSE),
-                  selectInput("xaxis", "X_Axis", choices = NULL, multiple = TRUE),
-                  selectInput("yaxis", "Y_Axis", choices = NULL, multiple = TRUE),
                   selectInput(
-                    "category",
-                    "Category",
-                    choices = NULL,
-                    multiple = TRUE
-                  )                ),
-                box(width = 9, plotlyOutput(outputId = "dline", height = 400))
+                    "charttype",
+                    "Plot Type",
+                    choices = c("Line", "Bar", "Table"),
+                    multiple = FALSE
+                  ),
+                  uiOutput("lineplotVar1"),
+                  uiOutput("lineplotVar2"),
+                  uiOutput("lineplotVar3"),
+                  uiOutput("tablecol")
+                  
+                ),
+                box(width = 9, uiOutput("LinePlot"), uiOutput("tableplot"), )
               ))
     ))
 )
@@ -239,8 +242,6 @@ server <- function(input, output, session) {
   
   
   output$bar <- renderPlotly({
-    
-    
     p1 <-
       ggplot(gensourceData(),
              aes(
@@ -267,37 +268,16 @@ server <- function(input, output, session) {
     print(inFile$datapath)
     read.csv(inFile$datapath, header = TRUE)
   })
-
+  
   ########## Displays top 5 rows of the imported csv #############
   output$head <- renderTable({
     head(data(), input$n)
   })
   
-  observeEvent(data(), {
-    choices <- unique(colnames(data()))
-    updateSelectInput(session, "xaxis", choices = choices, selected = NULL)
-  })
   
-  observeEvent(data(), {
-    choices <- unique(colnames(data()))
-    updateSelectInput(session, "yaxis", choices = choices, selected = NULL)
-  })
   
-  observeEvent(data(), {
-    choices <- unique(colnames(data()))
-    updateSelectInput(session,
-                      "category",
-                      choices = choices,
-                      selected = NULL)
-  })
   
-  observeEvent(data(), {
-    choices <- c("Line","Bar","Table")
-    updateSelectInput(session,
-                      "chart_type",
-                      choices = choices,
-                      selected = NULL)
-  })
+  
   
   data1 <- reactive({
     req(input$file1)
@@ -306,41 +286,140 @@ server <- function(input, output, session) {
     read.csv(inFile$datapath, header = TRUE)
   })
   
-  output$dline <- renderPlotly({
-    data2 <- data1()
-    print(data2)
+  
+  output$lineplotVar1 <- renderUI({
+    if (input$charttype == "Line")
+    {
+      choices <- unique(colnames(data()))
+      selectInput("xaxis",
+                  "X_Axis",
+                  choices = choices,
+                  multiple = TRUE)
+      
+    }
+  })
+  
+  output$lineplotVar2 <- renderUI({
+    if (input$charttype == "Line")
+    {
+      choices <- unique(colnames(data()))
+      
+      selectInput("yaxis",
+                  "Y_Axis",
+                  choices = choices,
+                  multiple = TRUE)
+      
+      
+      
+    }
+  })
+  
+  output$lineplotVar3 <- renderUI({
+    if (input$charttype == "Line")
+    {
+      choices <- unique(colnames(data()))
+      selectInput("category",
+                  "Category",
+                  choices = choices,
+                  multiple = TRUE)
+    }
     
-    data2 <- data2 %>% rename(
-      col1 = input$xaxis,
-      col2 = input$yaxis,
-      category = input$category
-    )
     
-    p1 <-
-      ggplot(data2, aes(
-        x = col1,
-        y = col2,
-        fill = category,
-        text = paste(
-          "</br>X-axis: ",
-          col1,
-          "</br>Y-Axis: ",
-          col2,
-          "</br>Category: ",
-          category
-        )
-      )) + geom_col() + theme_minimal() + labs(y = input$yaxis,
-                                               x = input$xaxis,
-                                               col = input$category)
-    ggplotly(p1, tooltip = c("text"))
-    
-    
-    
+  })
+  
+  output$LinePlot <- renderUI({
+    if (input$charttype == "Line")
+    {
+      plotlyOutput(outputId = "dline", height = 400)
+      
+    }
     
     
   })
   
   
+  output$tablecol <- renderUI({
+    if (input$charttype == "Table")
+    {
+      choices <- unique(colnames(data()))
+      selectInput("Column",
+                  "List of Columns",
+                  choices = choices,
+                  multiple = TRUE)
+      
+    }
+    
+    
+  })
+  
+  output$tableplot <- renderUI({
+    if (input$charttype == "Table")
+    {
+      DT::dataTableOutput(outputId = "table")
+      
+    }
+    
+    
+  })
+  
+  
+  output$dline <- renderPlotly({
+  
+    {
+      data2 <- data1()
+      print(data2)
+      
+      data2 <- data2 %>% rename(
+        col1 = input$xaxis,
+        col2 = input$yaxis,
+        category = input$category
+      )
+      
+      p1 <-
+        ggplot(data2, aes(
+          x = col1,
+          y = col2,
+          fill = category,
+          text = paste(
+            "</br>X-axis: ",
+            col1,
+            "</br>Y-Axis: ",
+            col2,
+            "</br>Category: ",
+            category
+          )
+        )) + geom_col() + theme_minimal() + labs(y = input$yaxis,
+                                                 x = input$xaxis,
+                                                 col = input$category)
+      ggplotly(p1, tooltip = c("text"))
+      
+      
+      
+      
+      
+    }
+  })
+  
+  
+  new_data <- reactive({
+    newdata1 <- data1()
+    newdata1 %>% select(input$Column)
+  })
+  
+  
+    output$table <- DT::renderDataTable({
+      new_data()
+      
+      #,options = list(pageLength = 5,initComplete = I("function(settings, json) {alert('Done.');}"))
+    })
+    
+  
 }
+
+
+
+
+
+
 
 shinyApp(ui, server)
