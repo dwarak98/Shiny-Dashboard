@@ -11,7 +11,9 @@ library(lubridate)
 library(RCurl)
 require(plotly)
 library(tidyr)
-
+library('ggplot2')
+library('forecast')
+library('tseries')
 
 ################################# Downloading VER data #########################################
 
@@ -98,7 +100,8 @@ ui <- dashboardPage(
       icon = icon("dashboard")
     ),
     menuItem("Widgets", tabName = "widgets", icon = icon("th")),
-    menuItem("Dynammic UI", tabName = "DynammicUI", icon = icon("th"))
+    menuItem("Visualization", tabName = "Visualization", icon = icon("th")),
+    menuItem("Prediction", tabName = "Prediction", icon = icon("th"))
   )),
   dashboardBody(# Boxes need to be put in a row (or column)
     tabItems(
@@ -159,7 +162,7 @@ ui <- dashboardPage(
         
       ),
       # 3rd tab
-      tabItem(tabName = "DynammicUI",
+      tabItem(tabName = "Visualization",
               fluidRow(
                 box(
                   width = 3,
@@ -172,15 +175,39 @@ ui <- dashboardPage(
                   uiOutput("lineplotVar1"),
                   uiOutput("lineplotVar2"),
                   uiOutput("lineplotVar3"),
-                  uiOutput("tablecol")
+                  uiOutput("tablecol1"),
+                  uiOutput("tablecol2"),
+                  uiOutput("tablecol3")
                   
                 ),
                 box(width = 9, uiOutput("LinePlot"), uiOutput("tableplot"), )
+              )),
+      # 4th tab
+      tabItem(tabName = "Prediction",
+              fluidRow(
+                box(
+                  width = 3,
+                  selectInput(
+                    "algo",
+                    "Algorithm",
+                    choices = c("ARIMA", "Linear Regression"),
+                    multiple = FALSE
+                  ),
+                  uiOutput("P"),
+                  uiOutput("Q"),
+                  uiOutput("D"),
+                  uiOutput("y_variable"),
+                  uiOutput("x"),
+
+                ),
+                box(width = 9, uiOutput("table1plot"), )
               ))
     ))
 )
 
 server <- function(input, output, session) {
+  
+  ########### RT Update of SPP operational Data ####################
   sourceData <- reactive({
     invalidateLater(60000, session)
     
@@ -258,7 +285,7 @@ server <- function(input, output, session) {
     
   })
   
-  ################ Dynammic UI plots #########################
+  ################ Visualization #########################
   
   ############ Read the imported csv file ######################
   
@@ -276,7 +303,7 @@ server <- function(input, output, session) {
   
   
   
-  
+  ########### Display Line Plot #################
   
   
   data1 <- reactive({
@@ -338,29 +365,6 @@ server <- function(input, output, session) {
   })
   
   
-  output$tablecol <- renderUI({
-    if (input$charttype == "Table")
-    {
-      choices <- unique(colnames(data()))
-      selectInput("Column",
-                  "List of Columns",
-                  choices = choices,
-                  multiple = TRUE)
-      
-    }
-    
-    
-  })
-  
-  output$tableplot <- renderUI({
-    if (input$charttype == "Table")
-    {
-      DT::dataTableOutput(outputId = "table")
-      
-    }
-    
-    
-  })
   
   
   output$dline <- renderPlotly({
@@ -401,9 +405,94 @@ server <- function(input, output, session) {
   })
   
   
+  ####################### Table Display ###################
+  
+  output$tablecol1 <- renderUI({
+    if (input$charttype == "Table")
+    {
+      choices <- unique(colnames(data()))
+      selectInput("VALUE",
+                  "ENTER THE AMOUNT OR VALUE",
+                  choices = choices,
+                  multiple = TRUE)
+      
+    }
+    
+    
+  })
+  
+  output$tablecol2 <- renderUI({
+    if (input$charttype == "Table")
+    {
+      choices <- unique(colnames(data()))
+      
+      selectInput("Row",
+                  "List of Row",
+                  choices = choices,
+                  multiple = TRUE)
+      
+      
+    }
+    
+    
+  })
+  
+  output$tablecol3 <- renderUI({
+    if (input$charttype == "Table")
+    {
+      choices <- unique(colnames(data()))
+      
+      selectInput("Column",
+                  "List of Columns",
+                  choices = choices,
+                  multiple = TRUE)
+      
+    }
+    
+    
+  })
+  
+  
+  
+  output$tableplot <- renderUI({
+    if (input$charttype == "Table")
+    {
+      DT::dataTableOutput(outputId = "table")
+      
+    }
+    
+    
+  })
+  
+  
+  
   new_data <- reactive({
-    newdata1 <- data1()
-    newdata1 %>% select(input$Column)
+    
+    print(input$Column[2])
+    if (is.na(input$Column[2]))
+    {
+      newdata1 <- data1() %>% rename(
+        Col1 = input$Column[1],
+        Vue = input$VALUE,
+        Rws = input$Row
+      )
+     
+      newdata1 %>% group_by(Col1) %>% summarise(Value = sum(as.numeric(Vue)))
+      # aggregate(newdata1$input$VALUE, by=list(newdata1$input$Column), FUN=sum)
+    }
+    
+    else if (!is.na(input$Column[2]))
+    {
+      newdata1 <- data1() %>% rename(
+        Col1 = input$Column[1],
+        Col2 = input$Column[2],
+        Vue = input$VALUE,
+        Rws = input$Row
+      )
+      newdata1 %>% group_by(Col1,Col2) %>% summarise(Value = sum(as.numeric(Vue)))
+      # aggregate(newdata1$input$VALUE, by=list(newdata1$input$Column), FUN=sum)
+    }
+    
   })
   
   
@@ -414,10 +503,76 @@ server <- function(input, output, session) {
     })
     
   
+    ##################### PREDICTION #########################
+    
+    output$y_variable <- renderUI({
+      if (input$algo == "ARIMA")
+      {
+        choices <- unique(colnames(data()))
+        selectInput("y_variable1",
+                    "What to Predict",
+                    choices = choices,
+                    multiple = TRUE)
+        
+      }
+    })
+    
+    output$y_variable <- renderUI({
+      if (input$algo == "ARIMA")
+      {
+        choices <- unique(colnames(data()))
+        selectInput("y_variable1",
+                    "What to Predict",
+                    choices = choices,
+                    multiple = TRUE)
+        
+      }
+    })
+      
+      output$P <- renderUI({
+        if (input$algo == "ARIMA")
+        {
+          numericInput("P1", 
+                       h3("Auto Regressive Coeffcienct (P)"), 
+                       value = 1)
+          
+          
+        }
+      })
+      
+      output$Q <- renderUI({
+        if (input$algo == "ARIMA")
+        {
+          numericInput("Q1", 
+                       h3("Moving Average Coeffcienct (P)"), 
+                       value = 1)
+          
+          
+        }
+      })
+      
+      output$D <- renderUI({
+        if (input$algo == "ARIMA")
+        {
+          numericInput("D1", 
+                       h3("Differencing (D)"), 
+                       value = 1)
+          
+          
+        }
+      })
+      
+      ARIMA(data(),input$y_variable1,input$P1,input$Q1,input$D1)
+    
 }
 
 
-
+ARIMA <- function(df,y,p,q,d)
+{
+  ts <- data.frame(df$Interval,df$value)
+  x <- auto.arima()
+  
+}
 
 
 
