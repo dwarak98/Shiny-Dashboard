@@ -25,6 +25,7 @@ get_data <- function() {
       ssl.verifypeer = FALSE
     )
   df <- read.csv(textConnection(myfile), header = T)
+  setDT(df)
   df$Interval = str_replace_all(df$Interval, "/", "-")
   df$Interval <- mdy_hms(df$Interval, tz = Sys.timezone())
   df$Hour <- hour(df$Interval)
@@ -75,6 +76,8 @@ get_gen_data <- function() {
   
   
   gendf$Hour <- hour(gendf$GMT.MKT.Interval)
+  setDT(gendf)
+  
   
   gendf = melt(gendf, id = c("GMT.MKT.Interval", "Hour"))
   
@@ -562,7 +565,7 @@ server <- function(input, output, session) {
         }
       })
       
-      ARIMA(data(),input$y_variable1,input$P1,input$Q1,input$D1)
+    #  ARIMA(data(),input$y_variable1,input$P1,input$Q1,input$D1)
     
 }
 
