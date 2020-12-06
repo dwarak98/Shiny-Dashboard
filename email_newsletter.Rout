@@ -1,0 +1,238 @@
+
+R version 4.0.3 (2020-10-10) -- "Bunny-Wunnies Freak Out"
+Copyright (C) 2020 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> library(blastula)
+> library(keyring)
+> library('rmarkdown')
+> library("blastula")
+> library("glue")
+> source("helperMethods.R")
+
+Attaching package: 'shinydashboard'
+
+The following object is masked from 'package:graphics':
+
+    box
+
+
+Attaching package: 'dplyr'
+
+The following object is masked from 'package:glue':
+
+    collapse
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+-- Attaching packages --------------------------------------- tidyverse 1.3.0 --
+v tibble  3.0.4     v purrr   0.3.4
+v tidyr   1.1.2     v forcats 0.5.0
+v readr   1.4.0     
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::collapse() masks glue::collapse()
+x dplyr::filter()   masks stats::filter()
+x dplyr::lag()      masks stats::lag()
+
+Attaching package: 'lubridate'
+
+The following objects are masked from 'package:base':
+
+    date, intersect, setdiff, union
+
+
+Attaching package: 'plotly'
+
+The following object is masked from 'package:ggplot2':
+
+    last_plot
+
+The following object is masked from 'package:blastula':
+
+    add_image
+
+The following object is masked from 'package:stats':
+
+    filter
+
+The following object is masked from 'package:graphics':
+
+    layout
+
+
+Attaching package: 'data.table'
+
+The following objects are masked from 'package:lubridate':
+
+    hour, isoweek, mday, minute, month, quarter, second, wday, week,
+    yday, year
+
+The following object is masked from 'package:purrr':
+
+    transpose
+
+The following objects are masked from 'package:dplyr':
+
+    between, first, last
+
+
+Attaching package: 'RCurl'
+
+The following object is masked from 'package:tidyr':
+
+    complete
+
+Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo 
+> library(ggplot2)
+> # 
+> # ###################### Date Time Formatting #########################################
+> # format_DateTime <- function(df, dateColName, format) {
+> #   df[[dateColName]] = str_replace_all(df[[dateColName]], "/", "-")
+> #   if (format == "ymd_hms") {
+> #     df[[dateColName]] <-
+> #       ymd_hms(df[[dateColName]], tz = Sys.timezone())
+> #   }
+> #   else if (format == "mdy_hms") {
+> #     df[[dateColName]] <- mdy_hms(df[[dateColName]], tz = Sys.timezone())
+> #   }
+> #   
+> #   df$Hour <- hour(df[[dateColName]])
+> #   return(df)
+> # }
+> # 
+> # ################################# Downloading VER data #########################################
+> # 
+> # 
+> # getForecastVsActual <- function() {
+> #   myfile <-
+> #     getURL(
+> #       'https://marketplace.spp.org/chart-api/load-forecast/asFile',
+> #       ssl.verifyhost = FALSE,
+> #       ssl.verifypeer = FALSE
+> #     )
+> #   df <- read.csv(textConnection(myfile), header = T)
+> #   df <- format_DateTime(df, "Interval", "mdy_hms")
+> #   df$wind_pen_actual <- df$Actual.Wind * 100 / df$Actual.Load
+> #   df$wind_pen_STF <- df$STWF * 100 / df$STLF
+> #   df$wind_pen_MTF <- df$MTWF * 100 / df$MTLF
+> #   setDT(df)
+> #   df <- melt(df, id = c("Interval", "Hour", "GMTIntervalEnd"))
+> #   return(df)
+> # }
+> # 
+> # combine_df_Columns <- function(df, resultColName, colNames) {
+> #   i = 0
+> #   for (colName in colNames) {
+> #     if (i == 0) {
+> #       df[[resultColName]] <- df[[colName]]
+> #     }
+> #     else{
+> #       df[[resultColName]] <- df[[resultColName]] + df[[colName]]
+> #     }
+> #     i = i + 1
+> #     
+> #   }
+> #   
+> #   return(df)
+> #   
+> #   
+> # }
+> 
+> 
+> df <- getForecastVsActual()
+> 
+> #img_file_path <- "saved_image.jpeg"
+> 
+> 
+> 
+> #jpeg(file=img_file_path, width = 1080, height = 920)
+> 
+> plot_image <- df %>%
++   filter(variable %in% c("wind_pen_actual", "wind_pen_STF", "wind_pen_MTF")) %>%
++   ggplot(aes(
++     x = Interval,
++     y = value,
++     col = variable,
++     text = paste(
++       "</br>Date: ",
++       Interval,
++       "</br>Value: ",
++       value,
++       "</br>Category: ",
++       variable
++     )
++   )) + geom_point() + geom_line() + theme_minimal() + labs(y = "Wind Penetration (%)", x = "Datetime", col = "Category")
+> 
+> 
+> 
+> 
+> 
+> date_time <- add_readable_time()
+> plot_email <- add_ggplot(plot_image, height = 12.266666666666667, width = 14.4)
+geom_path: Each group consists of only one observation. Do you need to adjust
+the group aesthetic?
+Warning messages:
+1: Removed 6102 rows containing missing values (geom_point). 
+2: Removed 6102 row(s) containing missing values (geom_path). 
+> 
+> email <- compose_email(
++   body = md(c("Hi Team, This important forecast needs to go out today.", plot_email)),
++   footer = md(c("Email sent on ", date_time,"."))
++ )
+> 
+> SMTP_PASSWORD = "Ooct248014"
+> 
+> Sys.setenv(SMTP_PASSWORD="Ooct248014")
+> 
+> 
+> # email <- render_email('email.Rmd')
+> # create_smtp_creds_key(
+> #   id = "gmail",
+> #   user = "sppim.newsletter@gmail.com",
+> #   provider = "gmail",
+> #  # overwrite = TRUE
+> # )
+> 
+> email %>%
++   smtp_send(
++     from = "sppim.newsletter@gmail.com",
++     to = "dwarakvaradharajan@gmail.com",
++     subject = "Testing the `smtp_send()` function",
++     credentials = creds_envvar(
++       user = "sppim.newsletter@gmail.com",
++       pass_envvar = "SMTP_PASSWORD",
++       provider = "gmail",
++       host = NULL,
++       port = NULL,
++       use_ssl = TRUE
++     )
++     )
+The email message was sent successfully.
+> 
+> proc.time()
+   user  system elapsed 
+   2.39    1.17    6.45 

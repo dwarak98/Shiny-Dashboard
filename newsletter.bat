@@ -1,0 +1,1 @@
+"C:\Program Files\R\R-4.0.3\bin\R.exe" CMD BATCH C:\Users\dvaradharajan\Git\Shiny-Dashboard\email_newsletter.R
